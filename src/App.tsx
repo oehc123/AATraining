@@ -57,6 +57,8 @@ export default class YiReactApp extends React.Component<Props, State> {
           data={item.movies}
           renderItem={item => this.renderItem(item, index===0)}
           horizontal
+          snapToAlignment='center'
+          snapToInterval={0}
         />
         <View style={{width: '100%'}}/>
       </View>
@@ -70,6 +72,8 @@ export default class YiReactApp extends React.Component<Props, State> {
       <View style={styles.mainContainer}>
         <FlatList
           data={this.state.data}
+          snapToAlignment='center'
+          snapToInterval={0}
           renderItem={this.renderSwimlane}
         />
 
