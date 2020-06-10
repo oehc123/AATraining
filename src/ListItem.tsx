@@ -1,13 +1,15 @@
 import * as React from 'react';
-import { TouchableOpacity, ImageBackground, StyleSheet, Dimensions, Text } from 'react-native';
+import { View, Image, StyleSheet, Dimensions, Text, TouchableWithoutFeedback } from 'react-native';
 import { FocusManager } from '@youi/react-native-youi';
 
 const WIDTH = Dimensions.get('window').width;
 const HEIGHT = Dimensions.get('window').height;
+const BORDER_WIDTH = WIDTH*0.005
 
 interface Props {
   item: any,
-  index: number
+  index: number,
+  firstSwimlane: boolean
 }
 
 interface State {
@@ -15,7 +17,7 @@ interface State {
 }
 
 export default class ListItem extends React.PureComponent<Props, State> {
-  itemRef = React.createRef<TouchableOpacity>()
+  itemRef = React.createRef<TouchableWithoutFeedback>()
   constructor(props: Readonly<Props>){
     super(props)
     this.state = {
@@ -24,7 +26,8 @@ export default class ListItem extends React.PureComponent<Props, State> {
   }
 
   componentDidMount = () => {
-    setTimeout( () => { this.props.index === 0 && FocusManager.focus(this.itemRef.current) }, 0)
+    const { index, firstSwimlane } = this.props
+    setTimeout( () => { this.props.index === 0 && this.props.firstSwimlane && FocusManager.focus(this.itemRef.current) }, 0)
   };
 
   itemGainFocus = () => {
@@ -38,20 +41,23 @@ export default class ListItem extends React.PureComponent<Props, State> {
   render(){
     const { item } = this.props
   return (
-    <TouchableOpacity
-        style={[styles.itemContainer, {borderWidth: this.state.isFocused ? WIDTH*0.005 : 0}]}
+    <TouchableWithoutFeedback
         ref={this.itemRef}
         onFocus={this.itemGainFocus}
         onBlur={this.itemLostFocus}
       >
-        <ImageBackground
-          source={{uri: this.props.item.image}}
-          style={styles.image}
-          resizeMode='cover'
-        >
-        </ImageBackground>
-        <Text style={styles.title}>{item.title}</Text>
-      </TouchableOpacity>
+        <View style={styles.itemContainer}>
+          <View style={[styles.imageContainer, {borderWidth: this.state.isFocused ? BORDER_WIDTH : 0}]}>
+            <Image
+              source={{uri: this.props.item.image}}
+              style={styles.image}
+            />
+          </View>
+          <View style={{flex:1, marginTop: BORDER_WIDTH}}>
+            <Text style={styles.title} ellipsizeMode='tail' numberOfLines={2} >{item.title}</Text>
+          </View>
+        </View>
+      </TouchableWithoutFeedback>
   );
 }
 };
@@ -59,16 +65,20 @@ export default class ListItem extends React.PureComponent<Props, State> {
 const styles = StyleSheet.create({
   itemContainer: {
     width: WIDTH*0.2,
-    height: HEIGHT*0.3,
+    height: HEIGHT*0.35,
     margin: WIDTH*0.015,
+  },
+  imageContainer: {
+    flex: 4, 
     borderColor: 'white',
   },
   image: {
     width: '100%',
-    height: '100%'
+    height: '100%',
+    resizeMode: 'cover'
   },
   title: {
     fontSize: 10,
-    marginTop: '3%'
+    justifyContent: 'center',
   }
 });

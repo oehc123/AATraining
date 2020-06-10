@@ -25,21 +25,41 @@ export default class YiReactApp extends React.Component<Props, State> {
 
    async componentDidMount() {
      try{
-      const response = await RequestService.fetchMovies()
+      const response = await RequestService.fetchCategories()
+      const allPromiseMovies = response.data.map( async (item: { filter: string; title: string; }) => {
+        try {
+          const categoryMovieResponse = await RequestService.fetchMoviesByCategory(item.filter)
+          return {categoryTitle: item.title, categoryFilter: item.filter, movies: categoryMovieResponse.data}
+        } catch(e) {console.log('error fetching movies of specific category ', e)}
+      })
+      const allMovies = await Promise.all(allPromiseMovies)
       this.setState({
-        data: response.data,
+        data: allMovies,
         loading: false
       })
      } catch(e) {console.log('error fetching data ', e)}
    }
 
-   onFocusItem = () => {
-
+   renderItem =  ({item, index}: ListRenderItemInfo<any>, firstSwimlane: boolean) => {
+    return(
+      <ListItem item={item} index={index} firstSwimlane={firstSwimlane}/>
+     )
    }
 
-   renderItem =  ({item, index}: ListRenderItemInfo<any>) => {
-    return(
-      <ListItem item={item} index={index}/>
+   renderSwimlane = ({item, index}: ListRenderItemInfo<any>) => {
+
+     return(
+       <View>
+        <Text style={{marginLeft: '1%'}}>
+          {item.categoryTitle}
+        </Text>
+        <FlatList
+          data={item.movies}
+          renderItem={item => this.renderItem(item, index===0)}
+          horizontal
+        />
+        <View style={{width: '100%'}}/>
+      </View>
      )
    }
 
@@ -48,16 +68,12 @@ export default class YiReactApp extends React.Component<Props, State> {
 
     return (
       <View style={styles.mainContainer}>
-        <Text style={{marginLeft: '1%'}}>
-          ALL MOVIES
-        </Text>
         <FlatList
           data={this.state.data}
-          renderItem={this.renderItem}
-          horizontal
+          renderItem={this.renderSwimlane}
         />
 
-        <View style={[styles.loadingIndicator, { opacity: loading ? 0.5 : 0 }]}>
+        <View style={[styles.loadingIndicator, { opacity: loading ? 0.3 : 0 }]}>
           <Text>LOADING...</Text>
         </View>
       </View>
@@ -67,7 +83,8 @@ export default class YiReactApp extends React.Component<Props, State> {
 
 const styles = StyleSheet.create({
   mainContainer: {
-    flex: 1,
+    height: '100%',
+    width: '100%',
     backgroundColor: 'grey',
     paddingTop: '1%'
   },
@@ -77,6 +94,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     height: '100%', 
     width: '100%', 
-    backgroundColor: 'blue'
+    backgroundColor: 'green'
   }
 });
