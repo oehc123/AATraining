@@ -12,7 +12,7 @@ const HEIGHT = Dimensions.get('window').height;
 const BORDER_WIDTH = WIDTH*0.005
 
 interface State {
-  data: any[]
+  data: any[],
   loading: boolean,
   isloginBtnFocused: boolean,
   showLoginOverlay: boolean,
@@ -20,7 +20,8 @@ interface State {
   password: string,
   isUsernameFocused: boolean,
   isPasswordInputFocused: boolean,
-  isloginBtnOverlayFocused: boolean
+  isloginBtnOverlayFocused: boolean,
+  showWrongCredentials: boolean
 }
 
 interface Props {
@@ -31,6 +32,7 @@ export default class YiReactApp extends React.Component<Props, State> {
   overlayFocusRoot = React.createRef<View>();
   usernameTextInput = React.createRef<TextInput>();
   loginButton = React.createRef<TouchableWithoutFeedback>()
+  errorMessage = 'default error message'
 
   constructor(props: Readonly<Props>){
     super(props)
@@ -43,7 +45,8 @@ export default class YiReactApp extends React.Component<Props, State> {
       password: '',
       isUsernameFocused: false,
       isPasswordInputFocused: false,
-      isloginBtnOverlayFocused: false
+      isloginBtnOverlayFocused: false,
+      showWrongCredentials: false,
     }
   }
 
@@ -72,13 +75,15 @@ export default class YiReactApp extends React.Component<Props, State> {
      FocusManager.focus(this.loginButton.current)
    }
 
-   renderItem =  ({item, index}: ListRenderItemInfo<any>, firstSwimlane: boolean) => {
+   renderItem =  ({item, index}: ListRenderItemInfo<any>, firstSwimlane: boolean, isMyWatchList: boolean) => {
     return(
-      <ListItem item={item} index={index} firstSwimlane={firstSwimlane}/>
+      <ListItem item={item} index={index} firstSwimlane={firstSwimlane} isMyWatchList={isMyWatchList}/>
      )
    }
 
    renderSwimlane = ({item, index}: ListRenderItemInfo<any>) => {
+    const isMyWatchList = item.categoryFilter === 'My Watch List'
+    const isFirstItem = index === 0
      return(
        <View>
         <Text style={{marginLeft: '1%'}}>
@@ -86,7 +91,7 @@ export default class YiReactApp extends React.Component<Props, State> {
         </Text>
         <FlatList
           data={item.movies}
-          renderItem={item => this.renderItem(item, index===0)}
+          renderItem={item => this.renderItem(item, isFirstItem, isMyWatchList)}
           horizontal
           snapToAlignment='center'
           snapToInterval={0}
@@ -97,7 +102,7 @@ export default class YiReactApp extends React.Component<Props, State> {
    }
 
    onLoginPressed = () => {
-    this.setState({ showLoginOverlay: true, isUsernameFocused: true, isPasswordInputFocused: false, isloginBtnOverlayFocused: false})
+    this.setState({ showLoginOverlay: true, isUsernameFocused: true, isPasswordInputFocused: false, isloginBtnOverlayFocused: false, showWrongCredentials: false})
     FocusManager.setFocusRoot(this.mainFocusRoot.current, false)
     FocusManager.setFocusRoot(this.overlayFocusRoot.current, true)
     FocusManager.focus(this.usernameTextInput.current)
@@ -108,8 +113,30 @@ export default class YiReactApp extends React.Component<Props, State> {
 
    onLoginBlur = () => this.setState({ isloginBtnFocused: false})
 
-   onLoginOverlayPressed = () => {
+   onLoginOverlayPressed = async () => {
+    this.setState({ showWrongCredentials: false}) 
+    try{
+      const response = await RequestService.loginWithUsernameAndPassword(this.state.username, this.state.password)
+      response.data ? this.onLoginRequestSuccess(response.data) : this.showWrongLoginCredentials(response.message)
+     } catch(e) {console.log('error trying to login User ', e)}
+     
    }
+
+   onLoginRequestSuccess = (myWatchListMovies: []) => {    
+    let data = this.state.data 
+    const myWatchList = {
+      categoryTitle: "My Watch List",
+      categoryFilter: "My Watch List",
+      movies: myWatchListMovies
+    }
+    data.unshift(myWatchList)
+    this.setState({ data, showLoginOverlay: false })
+   }
+
+   showWrongLoginCredentials = (message: string) => {
+    this.errorMessage = message 
+    this.setState({showWrongCredentials: true})
+  }
 
    onLoginOverlayFocused = () => this.setState({ isloginBtnOverlayFocused: true})
 
@@ -152,6 +179,9 @@ export default class YiReactApp extends React.Component<Props, State> {
                 <Text>LOG IN</Text>
               </View>
             </TouchableWithoutFeedback>
+            {
+              this.state.showWrongCredentials && <Text style={{fontSize: 12}}>{this.errorMessage}</Text>
+            }
           </View>
         </View>
       )

@@ -9,7 +9,8 @@ const BORDER_WIDTH = WIDTH*0.005
 interface Props {
   item: any,
   index: number,
-  firstSwimlane: boolean
+  firstSwimlane: boolean,
+  isMyWatchList: boolean,
 }
 
 interface State {
@@ -39,27 +40,27 @@ export default class ListItem extends React.PureComponent<Props, State> {
   };
 
   render(){
-    const { item } = this.props
-  return (
-    <TouchableWithoutFeedback
-        ref={this.itemRef}
-        onFocus={this.itemGainFocus}
-        onBlur={this.itemLostFocus}
+    const { image, title} = this.props.isMyWatchList ? this.props.item.movie : this.props.item
+    return (
+      <TouchableWithoutFeedback
+          ref={this.itemRef}
+          onFocus={this.itemGainFocus}
+          onBlur={this.itemLostFocus}
       >
         <View style={styles.itemContainer}>
           <View style={[styles.imageContainer, {borderWidth: this.state.isFocused ? BORDER_WIDTH : 0}]}>
             <Image
-              source={{uri: this.props.item.image}}
+              source={{uri: image}}
               style={styles.image}
             />
           </View>
           <View style={{flex:1, marginTop: BORDER_WIDTH}}>
-            <Text style={styles.title} ellipsizeMode='tail' numberOfLines={2} >{item.title}</Text>
+            <Text style={styles.title} ellipsizeMode='tail' numberOfLines={2} >{title}</Text>
           </View>
         </View>
       </TouchableWithoutFeedback>
-  );
-}
+    );
+  }
 };
 
 const styles = StyleSheet.create({
