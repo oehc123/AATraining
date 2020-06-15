@@ -11,6 +11,7 @@ interface Props {
   index: number,
   firstSwimlane: boolean,
   isMyWatchList: boolean,
+  onPress(listItem: React.RefObject<TouchableWithoutFeedback>, item: any): void
 }
 
 interface State {
@@ -28,7 +29,7 @@ export default class ListItem extends React.PureComponent<Props, State> {
 
   componentDidMount = () => {
     const { index, firstSwimlane } = this.props
-    setTimeout( () => { this.props.index === 0 && this.props.firstSwimlane && FocusManager.focus(this.itemRef.current) }, 0)
+    setTimeout( () => { index === 0 && firstSwimlane && FocusManager.focus(this.itemRef.current) }, 0)
   };
 
   itemGainFocus = () => {
@@ -46,6 +47,7 @@ export default class ListItem extends React.PureComponent<Props, State> {
           ref={this.itemRef}
           onFocus={this.itemGainFocus}
           onBlur={this.itemLostFocus}
+          onPress={() => this.props.onPress(this.itemRef, this.props.item)}
       >
         <View style={styles.itemContainer}>
           <View style={[styles.imageContainer, {borderWidth: this.state.isFocused ? BORDER_WIDTH : 0}]}>
