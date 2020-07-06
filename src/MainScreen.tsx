@@ -43,8 +43,10 @@ export default class MainScreen extends React.Component<Props, State> {
   constructor(props: Readonly<Props>){
     super(props)
     this.state = {
-      data: [],
-      loading: true,
+      //data: [],
+      //loading: true,
+      data: DATA,
+      loading: false,
       isloginBtnFocused: false,
       showLoginOverlay: false,
       username: '',
@@ -57,8 +59,6 @@ export default class MainScreen extends React.Component<Props, State> {
   }
 
    async componentDidMount() {
-    
-
     this.focusListener = this.props.navigation.addListener("didFocus", () => {
       BackHandler.addEventListener("hardwareBackPress", this.backAction);
       FocusManager.setFocusRoot(this.mainFocusRoot.current, true)
@@ -69,7 +69,7 @@ export default class MainScreen extends React.Component<Props, State> {
       FocusManager.setFocusRoot(this.mainFocusRoot.current, false)
       BackHandler.removeEventListener('hardwareBackPress', this.backAction)
     });
-
+/*
      try{
       const response = await RequestService.fetchCategories()
       const allPromiseMovies = response.data.map( async (item: { filter: string; title: string; }) => {
@@ -84,7 +84,7 @@ export default class MainScreen extends React.Component<Props, State> {
         loading: false
       })
      } catch(e) {console.log('error fetching data ', e)}
-     
+     */
    }
 
    componentWillUnmount() {
