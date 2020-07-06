@@ -16,6 +16,7 @@ interface State {}
 export default class PDPScreen extends React.PureComponent <Props, State> {
   item: any;
   mainContainer = React.createRef<View>();
+  playButton = React.createRef<View>();
   constructor(props: Props) {
     super(props)
  //   this.item = this.props.navigation.getParam('item');
@@ -29,9 +30,8 @@ export default class PDPScreen extends React.PureComponent <Props, State> {
 
   componentDidMount() {
     this.focusListener = this.props.navigation.addListener("didFocus", () => {
-      console.log('jose focus roo PDP');
-      
       FocusManager.setFocusRoot(this.mainContainer.current, true)
+      FocusManager.focus(this.playButton.current)
 
     });
     
@@ -46,7 +46,7 @@ export default class PDPScreen extends React.PureComponent <Props, State> {
             style={styles.image}
           />
           <TouchableWithoutFeedback>
-            <View style={styles.playButton}>
+            <View style={styles.playButton} ref={this.playButton}>
               <Text style={{textAlign:'center'}}>Play</Text>
             </View>
           </TouchableWithoutFeedback>
