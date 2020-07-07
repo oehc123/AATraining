@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Text, View, StyleSheet, Image, TouchableWithoutFeedback, Dimensions, Animated } from 'react-native';
+import { Text, View, StyleSheet, Image, TouchableWithoutFeedback, Dimensions, Animated, Slider } from 'react-native';
 import { NavigationScreenProp } from 'react-navigation';
 import { FocusManager, Video } from '@youi/react-native-youi';
 
@@ -16,6 +16,8 @@ interface State {
   isPDPPlayButtonFocused: boolean
   isPlayerBackButtonFocused: boolean
   showPlayer: boolean
+  currentTime: number
+  duration: number
 }
 
 export default class PDPScreen extends React.PureComponent <Props, State> {
@@ -26,7 +28,7 @@ export default class PDPScreen extends React.PureComponent <Props, State> {
   playerContainer = React.createRef<View>();
   playerBackButton = React.createRef<View>();
   fadeOpacityPlayer = new Animated.Value(0);
-  positionPlayerAnimation = new Animated.Value(HEIGHT)
+  positionPlayerAnimation = new Animated.Value(HEIGHT);
 
   constructor(props: Props) {
     super(props)
@@ -40,8 +42,9 @@ export default class PDPScreen extends React.PureComponent <Props, State> {
       isPlaying: false,
       isPlayerBackButtonFocused: false,
       isPDPPlayButtonFocused: true,
-      showPlayer: false
-
+      showPlayer: false,
+      currentTime: 0,
+      duration: 0
     }
     
   }
@@ -111,6 +114,27 @@ export default class PDPScreen extends React.PureComponent <Props, State> {
     })
   }
 
+  getTimeDuration = () => {
+      const milliseconds = this.state.duration - this.state.currentTime
+      //Get hours from milliseconds
+      const hours = milliseconds / (1000*60*60);
+      const absoluteHours = Math.floor(hours);
+      const h = absoluteHours > 9 ? absoluteHours : '0' + absoluteHours;
+    
+      //Get remainder from hours and convert to minutes
+      const minutes = (hours - absoluteHours) * 60;
+      const absoluteMinutes = Math.floor(minutes);
+      const m = absoluteMinutes > 9 ? absoluteMinutes : '0' +  absoluteMinutes;
+    
+      //Get remainder from minutes and convert to seconds
+      const seconds = (minutes - absoluteMinutes) * 60;
+      const absoluteSeconds = Math.floor(seconds);
+      const s = absoluteSeconds > 9 ? absoluteSeconds : '0' + absoluteSeconds;
+    
+    
+      return h > 0 ? h + ':' + m + ':' + s : m + ':' + s
+    }
+
   render() {
     const { isPlayerBackButtonFocused, isPDPPlayButtonFocused } = this.state
     return (
@@ -136,7 +160,7 @@ export default class PDPScreen extends React.PureComponent <Props, State> {
         </View>
         <Animated.View
           ref={this.playerContainer}
-          style={{width: '100%', height: '100%', position:'absolute', opacity: this.fadeOpacityPlayer, transform: [{translateY: this.positionPlayerAnimation}] }}// this.state.showPlayer ? 1: 0}}
+          style={{justifyContent: 'space-between', width: '100%', height: '100%', position:'absolute', opacity: this.fadeOpacityPlayer, transform: [{translateY: this.positionPlayerAnimation}] }}// this.state.showPlayer ? 1: 0}}
         >
           <Video
             source={{
@@ -144,13 +168,23 @@ export default class PDPScreen extends React.PureComponent <Props, State> {
               type: "HLS"
             }}
             muted={true}
+            onCurrentTimeUpdated={(currentTime: number) => {
+              this.setState({
+                currentTime: currentTime
+              })}
+            }
+            onDurationChanged={(duration) => {
+              this.setState({
+                duration: duration
+              })}
+            }
             onReady={() => {
               console.log('onReady this.state.isPlaying ', this.state.isPlaying);
               
               this.state.isPlaying && this.video.current.play() 
             }}
             ref={this.video}
-            style={{ width: '100%', height:'100%', backgroundColor: 'yellow'}}
+            style={{ width: '100%', height:'100%', position: "absolute",}}
           />
           <TouchableWithoutFeedback 
             onPress={this.showPDP}
@@ -161,6 +195,18 @@ export default class PDPScreen extends React.PureComponent <Props, State> {
               <Text style={{textAlign:'center'}}>Back</Text>
             </View>
           </TouchableWithoutFeedback>
+          <View style={{justifyContent: 'space-evenly', alignItems: 'center', flexDirection: 'row', width: '100%', height: 20, marginBottom: '10%'}}>
+              <TouchableWithoutFeedback>
+                <Image 
+                  style={{ width: WIDTH* 0.05, height: WIDTH* 0.05, resizeMode: 'contain'}}
+                  source={{uri: this.state.isPlaying ? "res://drawable/default/pauseBtn.png" : "res://drawable/default/playBtn.png"}}
+                />
+              </TouchableWithoutFeedback>
+              <Slider
+                style={{ width: '80%'}}
+              />  
+              <Text>{this.getTimeDuration()}</Text>
+            </View>
         </Animated.View>
       </View>
     );
@@ -208,9 +254,7 @@ const styles = StyleSheet.create({
     borderColor: 'white',
     borderRadius: 5,
     borderWidth: BORDER_WIDTH,
-    position: "absolute",
     top: '5%',
     left: '5%'
-    
   }
 });
