@@ -17,7 +17,8 @@ interface State {
   isPlayerBackButtonFocused: boolean
   showPlayer: boolean
   currentTime: number
-  duration: number
+  duration: number,
+  isPlayerPlayPauseBtnFocused: boolean
 }
 
 export default class PDPScreen extends React.PureComponent <Props, State> {
@@ -44,7 +45,8 @@ export default class PDPScreen extends React.PureComponent <Props, State> {
       isPDPPlayButtonFocused: true,
       showPlayer: false,
       currentTime: 0,
-      duration: 0
+      duration: 0,
+      isPlayerPlayPauseBtnFocused: false,
     }
     
   }
@@ -135,8 +137,20 @@ export default class PDPScreen extends React.PureComponent <Props, State> {
       return h > 0 ? h + ':' + m + ':' + s : m + ':' + s
     }
 
+  onPlayPausePressed = () => {
+    const { isPlaying } = this.state
+    if(isPlaying) {
+      this.video.current.pause()
+    }
+    else {
+      this.video.current.play()
+    }
+    this.setState({isPlaying: !this.state.isPlaying})
+  }
+
   render() {
-    const { isPlayerBackButtonFocused, isPDPPlayButtonFocused } = this.state
+    const { isPlayerBackButtonFocused, isPDPPlayButtonFocused, isPlayerPlayPauseBtnFocused } = this.state
+    const playPauseButtonStyle = isPlayerPlayPauseBtnFocused ? {width: WIDTH* 0.056, height: WIDTH* 0.056, borderRadius: WIDTH*0.056/2} : {width: WIDTH* 0.04, height: WIDTH* 0.04, borderRadius: WIDTH*0.04/2}
     return (
       <View style={styles.container}>
         <View style={styles.leftSideContainer} ref={this.mainContainer}>
@@ -160,11 +174,11 @@ export default class PDPScreen extends React.PureComponent <Props, State> {
         </View>
         <Animated.View
           ref={this.playerContainer}
-          style={{justifyContent: 'space-between', width: '100%', height: '100%', position:'absolute', opacity: this.fadeOpacityPlayer, transform: [{translateY: this.positionPlayerAnimation}] }}// this.state.showPlayer ? 1: 0}}
+          style={{backgroundColor: 'black', justifyContent: 'space-between', width: '100%', height: '100%', position:'absolute', opacity: this.fadeOpacityPlayer, transform: [{translateY: this.positionPlayerAnimation}] }}// this.state.showPlayer ? 1: 0}}
         >
           <Video
             source={{
-              uri: "http://link.theplatform.com/s/BpkrRC/ckSTzzdGO_K3",
+              uri: this.item.video,
               type: "HLS"
             }}
             muted={true}
@@ -173,7 +187,7 @@ export default class PDPScreen extends React.PureComponent <Props, State> {
                 currentTime: currentTime
               })}
             }
-            onDurationChanged={(duration) => {
+            onDurationChanged={(duration: number) => {
               this.setState({
                 duration: duration
               })}
@@ -195,12 +209,18 @@ export default class PDPScreen extends React.PureComponent <Props, State> {
               <Text style={{textAlign:'center'}}>Back</Text>
             </View>
           </TouchableWithoutFeedback>
-          <View style={{justifyContent: 'space-evenly', alignItems: 'center', flexDirection: 'row', width: '100%', height: 20, marginBottom: '10%'}}>
-              <TouchableWithoutFeedback>
+          <View style={{justifyContent: 'space-evenly', alignItems: 'center', flexDirection: 'row', width: '100%', height: 20, marginBottom: '15%'}}>
+              <TouchableWithoutFeedback
+                onFocus={() => this.setState({ isPlayerPlayPauseBtnFocused: true})}
+                onBlur={() => this.setState({ isPlayerPlayPauseBtnFocused: false})}  
+                onPress={this.onPlayPausePressed}
+              >
+              <View style={[playPauseButtonStyle, { alignItems: 'center', justifyContent: 'center', alignSelf: 'center', backgroundColor: 'white'}]}>
                 <Image 
                   style={{ width: WIDTH* 0.05, height: WIDTH* 0.05, resizeMode: 'contain'}}
                   source={{uri: this.state.isPlaying ? "res://drawable/default/pauseBtn.png" : "res://drawable/default/playBtn.png"}}
                 />
+                </View>
               </TouchableWithoutFeedback>
               <Slider
                 style={{ width: '80%'}}
