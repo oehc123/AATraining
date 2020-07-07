@@ -25,7 +25,8 @@ export default class PDPScreen extends React.PureComponent <Props, State> {
   video = React.createRef<Video>();
   playerContainer = React.createRef<View>();
   playerBackButton = React.createRef<View>();
-  fadeOpacityPlayer = new Animated.Value(0)
+  fadeOpacityPlayer = new Animated.Value(0);
+  positionPlayerAnimation = new Animated.Value(HEIGHT)
 
   constructor(props: Props) {
     super(props)
@@ -55,14 +56,25 @@ export default class PDPScreen extends React.PureComponent <Props, State> {
   }
 
   hidePDP = () => {
-    Animated.timing(
-      this.fadeOpacityPlayer,
-      {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: true
-      }
-    ).start( () => {
+    Animated.parallel([
+      Animated.timing(
+        this.fadeOpacityPlayer,
+        {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true
+        }
+      ),
+      Animated.timing(
+        this.positionPlayerAnimation,
+        {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true
+        }
+      ),
+    ])
+    .start( () => {
       this.setState({showPlayer: true, isPlaying: true})
       this.video.current.play() 
       FocusManager.setFocusRoot(this.mainContainer.current, false)
@@ -72,14 +84,25 @@ export default class PDPScreen extends React.PureComponent <Props, State> {
   };
 
   showPDP = () => {
-    Animated.timing(
-      this.fadeOpacityPlayer,
-      {
-        toValue: 0,
-        duration: 500,
-        useNativeDriver: true
-      }
-    ).start( () => {
+    Animated.parallel([
+      Animated.timing(
+        this.fadeOpacityPlayer,
+        {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true
+        }
+      ),
+      Animated.timing(
+        this.positionPlayerAnimation,
+        {
+          toValue: HEIGHT,
+          duration: 300,
+          useNativeDriver: true
+        }
+      ),
+    ])
+    .start( () => {
       this.setState({showPlayer: false, isPlaying: false})
       this.video.current.pause() 
       FocusManager.setFocusRoot(this.mainContainer.current, true)
@@ -113,7 +136,7 @@ export default class PDPScreen extends React.PureComponent <Props, State> {
         </View>
         <Animated.View
           ref={this.playerContainer}
-          style={{width: '100%', height: '100%', position:'absolute', opacity: this.fadeOpacityPlayer }}// this.state.showPlayer ? 1: 0}}
+          style={{width: '100%', height: '100%', position:'absolute', opacity: this.fadeOpacityPlayer, transform: [{translateY: this.positionPlayerAnimation}] }}// this.state.showPlayer ? 1: 0}}
         >
           <Video
             source={{
