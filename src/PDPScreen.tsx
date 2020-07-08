@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Text, View, StyleSheet, Image, TouchableWithoutFeedback, Dimensions, Animated, Slider, BackHandler } from 'react-native';
+import { Text, View, StyleSheet, Image, TouchableWithoutFeedback, Dimensions, Animated, Slider, BackHandler, NativeEventEmitter, NativeModules } from 'react-native';
 import { FocusManager, Video } from '@youi/react-native-youi';
 import { NavigationScreenProp, NavigationEventSubscription } from 'react-navigation';
 
@@ -21,6 +21,8 @@ interface State {
   isPlayerPlayPauseBtnFocused: boolean
 }
 
+const UserInteractionEmitter = new NativeEventEmitter(NativeModules.InteractionModule);
+
 export default class PDPScreen extends React.PureComponent <Props, State> {
   item: any;
   mainContainer = React.createRef<View>();
@@ -29,9 +31,11 @@ export default class PDPScreen extends React.PureComponent <Props, State> {
   playerContainer = React.createRef<View>();
   playerBackButton = React.createRef<View>();
   fadeOpacityPlayer = new Animated.Value(0);
+  fadePlayerControllers = new Animated.Value(1);
   positionPlayerAnimation = new Animated.Value(HEIGHT);
   focusListener?: NavigationEventSubscription;
   blurListener?: NavigationEventSubscription;
+  eventEmitter: any;
 
   constructor(props: Props) {
     super(props)
@@ -63,6 +67,19 @@ export default class PDPScreen extends React.PureComponent <Props, State> {
     this.blurListener = this.props.navigation.addListener("didBlur", () => {
       BackHandler.removeEventListener('hardwareBackPress', this.backAction)
     });
+    //Listen to key events to show player controls:
+    // start listening for events emitted from native layer
+    this.eventEmitter = UserInteractionEmitter.addListener('USER_INTERACTION', this.showPlayerControl);
+  }
+
+  showPlayerControl = () => {
+    Animated.timing(
+      this.fadePlayerControllers, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true
+      }
+    ).start()
   }
 
   backAction = () => {
@@ -76,6 +93,8 @@ export default class PDPScreen extends React.PureComponent <Props, State> {
   }
 
   hidePDP = () => {
+    // start listening for events
+    NativeModules.InteractionModule.startListening();
     Animated.parallel([
       Animated.timing(
         this.fadeOpacityPlayer,
@@ -100,10 +119,26 @@ export default class PDPScreen extends React.PureComponent <Props, State> {
       FocusManager.setFocusRoot(this.mainContainer.current, false)
       FocusManager.setFocusRoot(this.playerContainer.current, true)
       FocusManager.focus(this.playerBackButton.current)
+      setTimeout( () => {
+        Animated.timing(
+          this.fadePlayerControllers, {
+            toValue: 0,
+            duration: 500,
+            useNativeDriver: true
+          }
+        ).start()
+      },
+      1000)
     })
   };
 
   showPDP = () => {
+    // stop listening for events
+    NativeModules.InteractionModule.stopListening();
+    // shutdown our event emitter listener
+    if (this.eventEmitter) {
+      this.eventEmitter.remove();
+    }
     Animated.parallel([
       Animated.timing(
         this.fadeOpacityPlayer,
@@ -208,8 +243,6 @@ export default class PDPScreen extends React.PureComponent <Props, State> {
               })}
             }
             onReady={() => {
-              console.log('onReady this.state.isPlaying ', this.state.isPlaying);
-              
               this.state.isPlaying && this.video.current.play() 
             }}
             ref={this.video}
@@ -220,11 +253,11 @@ export default class PDPScreen extends React.PureComponent <Props, State> {
             onFocus={() => this.setState({ isPlayerBackButtonFocused: true})}
             onBlur={() => this.setState({ isPlayerBackButtonFocused: false})}    
           >
-            <View style={[styles.playerBackButton, {borderWidth: isPlayerBackButtonFocused ? BORDER_WIDTH : 0}]} ref={this.playerBackButton}>
+            <Animated.View style={[styles.playerBackButton, {opacity: this.fadePlayerControllers, borderWidth: isPlayerBackButtonFocused ? BORDER_WIDTH : 0}]} ref={this.playerBackButton}>
               <Text style={{textAlign:'center'}}>Back</Text>
-            </View>
+            </Animated.View>
           </TouchableWithoutFeedback>
-          <View style={{justifyContent: 'space-evenly', alignItems: 'center', flexDirection: 'row', width: '100%', height: 20, marginBottom: '15%'}}>
+          <Animated.View style={{opacity: this.fadePlayerControllers, justifyContent: 'space-evenly', alignItems: 'center', flexDirection: 'row', width: '100%', height: 20, marginBottom: '15%'}}>
               <TouchableWithoutFeedback
                 onFocus={() => this.setState({ isPlayerPlayPauseBtnFocused: true})}
                 onBlur={() => this.setState({ isPlayerPlayPauseBtnFocused: false})}  
@@ -241,7 +274,7 @@ export default class PDPScreen extends React.PureComponent <Props, State> {
                 style={{ width: '80%'}}
               />  
               <Text>{this.getTimeDuration()}</Text>
-            </View>
+            </Animated.View>
         </Animated.View>
       </View>
     );
