@@ -79,7 +79,20 @@ export default class PDPScreen extends React.PureComponent <Props, State> {
         duration: 500,
         useNativeDriver: true
       }
-    ).start()
+    ).start(this.runTimerForPlayerControl)
+  }
+
+  runTimerForPlayerControl = () => {
+    setTimeout( () => {
+      Animated.timing(
+        this.fadePlayerControllers, {
+          toValue: 0,
+          duration: 3000,
+          useNativeDriver: true
+        }
+      ).start()
+    },
+    1000)
   }
 
   backAction = () => {
@@ -119,16 +132,7 @@ export default class PDPScreen extends React.PureComponent <Props, State> {
       FocusManager.setFocusRoot(this.mainContainer.current, false)
       FocusManager.setFocusRoot(this.playerContainer.current, true)
       FocusManager.focus(this.playerBackButton.current)
-      setTimeout( () => {
-        Animated.timing(
-          this.fadePlayerControllers, {
-            toValue: 0,
-            duration: 500,
-            useNativeDriver: true
-          }
-        ).start()
-      },
-      1000)
+      this.runTimerForPlayerControl()
     })
   };
 
