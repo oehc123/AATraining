@@ -1,7 +1,7 @@
 import * as React from 'react';
-import { Text, View, StyleSheet, Image, TouchableWithoutFeedback, Dimensions, Animated, Slider } from 'react-native';
-import { NavigationScreenProp } from 'react-navigation';
+import { Text, View, StyleSheet, Image, TouchableWithoutFeedback, Dimensions, Animated, Slider, BackHandler } from 'react-native';
 import { FocusManager, Video } from '@youi/react-native-youi';
+import { NavigationScreenProp, NavigationEventSubscription } from 'react-navigation';
 
 const WIDTH = Dimensions.get('window').width;
 const HEIGHT = Dimensions.get('window').height;
@@ -30,6 +30,8 @@ export default class PDPScreen extends React.PureComponent <Props, State> {
   playerBackButton = React.createRef<View>();
   fadeOpacityPlayer = new Animated.Value(0);
   positionPlayerAnimation = new Animated.Value(HEIGHT);
+  focusListener?: NavigationEventSubscription;
+  blurListener?: NavigationEventSubscription;
 
   constructor(props: Props) {
     super(props)
@@ -53,11 +55,24 @@ export default class PDPScreen extends React.PureComponent <Props, State> {
 
   componentDidMount() {
     this.focusListener = this.props.navigation.addListener("didFocus", () => {
+      BackHandler.addEventListener("hardwareBackPress", this.backAction);
       FocusManager.setFocusRoot(this.mainContainer.current, true)
       FocusManager.focus(this.playButton.current)
-
     });
-    
+
+    this.blurListener = this.props.navigation.addListener("didBlur", () => {
+      BackHandler.removeEventListener('hardwareBackPress', this.backAction)
+    });
+  }
+
+  backAction = () => {
+    if(this.state.showPlayer) {
+      this.showPDP()
+    }
+    else {
+      this.props.navigation.goBack()
+    }
+    return true
   }
 
   hidePDP = () => {
