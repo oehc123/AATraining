@@ -6,6 +6,7 @@ import { NavigationScreenProp, NavigationEventSubscription } from 'react-navigat
 const WIDTH = Dimensions.get('window').width;
 const HEIGHT = Dimensions.get('window').height;
 const BORDER_WIDTH = WIDTH*0.005
+const PLAYER_CONTROL_DURATION = 3000
 
 interface Props {
   navigation: NavigationScreenProp<any,any>
@@ -66,33 +67,57 @@ export default class PDPScreen extends React.PureComponent <Props, State> {
 
     this.blurListener = this.props.navigation.addListener("didBlur", () => {
       BackHandler.removeEventListener('hardwareBackPress', this.backAction)
+      if (this.eventEmitter) {
+        this.eventEmitter.remove();
+      }
     });
     //Listen to key events to show player controls:
     // start listening for events emitted from native layer
-    this.eventEmitter = UserInteractionEmitter.addListener('USER_INTERACTION', this.showPlayerControl);
+    this.eventEmitter = UserInteractionEmitter.addListener('USER_INTERACTION', this.onKeyPressed);
+  }
+
+  onKeyPressed = () => {
+    if(this.state.showPlayer) {
+      if(this.isPlayerControlShowing) {
+        //reset timer
+        console.log('jose st restart timer');
+        
+        this.playerControlTimer.clearTimeout
+        this.playerControlTimer = setTimeout(this.hidePlayerControl, PLAYER_CONTROL_DURATION)
+      }
+      else {
+        this.showPlayerControl()
+      }
+    }
   }
 
   showPlayerControl = () => {
+    this.playerControlTimer && clearTimeout(this.playerControlTimer)
+    NativeModules.InteractionModule.stopListening();
     Animated.timing(
       this.fadePlayerControllers, {
         toValue: 1,
         duration: 500,
         useNativeDriver: true
       }
-    ).start(this.runTimerForPlayerControl)
+    ).start( () => {
+      this.playerControlTimer = setTimeout(this.hidePlayerControl, PLAYER_CONTROL_DURATION)
+    })
+    this.isPlayerControlShowing = true
   }
 
-  runTimerForPlayerControl = () => {
-    setTimeout( () => {
+  hidePlayerControl = () => {
       Animated.timing(
         this.fadePlayerControllers, {
           toValue: 0,
-          duration: 3000,
+          duration: 1000,
           useNativeDriver: true
         }
-      ).start()
-    },
-    1000)
+      ).start(() => {
+        console.log('jose startListening');
+      })
+      NativeModules.InteractionModule.startListening()
+      this.isPlayerControlShowing = false
   }
 
   backAction = () => {
@@ -107,7 +132,6 @@ export default class PDPScreen extends React.PureComponent <Props, State> {
 
   hidePDP = () => {
     // start listening for events
-    NativeModules.InteractionModule.startListening();
     Animated.parallel([
       Animated.timing(
         this.fadeOpacityPlayer,
@@ -132,17 +156,14 @@ export default class PDPScreen extends React.PureComponent <Props, State> {
       FocusManager.setFocusRoot(this.mainContainer.current, false)
       FocusManager.setFocusRoot(this.playerContainer.current, true)
       FocusManager.focus(this.playerBackButton.current)
-      this.runTimerForPlayerControl()
+      this.showPlayerControl()
     })
   };
 
   showPDP = () => {
-    // stop listening for events
     NativeModules.InteractionModule.stopListening();
     // shutdown our event emitter listener
-    if (this.eventEmitter) {
-      this.eventEmitter.remove();
-    }
+
     Animated.parallel([
       Animated.timing(
         this.fadeOpacityPlayer,
@@ -202,6 +223,16 @@ export default class PDPScreen extends React.PureComponent <Props, State> {
     this.setState({isPlaying: !this.state.isPlaying})
   }
 
+
+  onSlidingComplete = (value: number) => {
+    if(this.isPlayerControlShowing) {
+      const position = Math.floor(value);
+      this.video.current.pause()
+      this.video?.current.seek(position)
+      this.video.current.play()
+    }
+  }
+
   render() {
     const { isPlayerBackButtonFocused, isPDPPlayButtonFocused, isPlayerPlayPauseBtnFocused } = this.state
     const playPauseButtonStyle = isPlayerPlayPauseBtnFocused ? {width: WIDTH* 0.056, height: WIDTH* 0.056, borderRadius: WIDTH*0.056/2} : {width: WIDTH* 0.04, height: WIDTH* 0.04, borderRadius: WIDTH*0.04/2}
@@ -228,7 +259,7 @@ export default class PDPScreen extends React.PureComponent <Props, State> {
         </View>
         <Animated.View
           ref={this.playerContainer}
-          style={{backgroundColor: 'black', justifyContent: 'space-between', width: '100%', height: '100%', position:'absolute', opacity: this.fadeOpacityPlayer, transform: [{translateY: this.positionPlayerAnimation}] }}// this.state.showPlayer ? 1: 0}}
+          style={{backgroundColor: 'black', justifyContent: 'space-between', width: WIDTH, height: '100%', position:'absolute', opacity: this.fadeOpacityPlayer, transform: [{translateY: this.positionPlayerAnimation}] }}// this.state.showPlayer ? 1: 0}}
         >
           <Video
             source={{
@@ -276,8 +307,13 @@ export default class PDPScreen extends React.PureComponent <Props, State> {
               </TouchableWithoutFeedback>
               <Slider
                 style={{ width: '80%'}}
+                maximumValue={this.state.duration}
+                minimumValue={0}
+                value={this.state.currentTime}
+                onValueChange={this.onScrub}
+                onSlidingComplete={this.onSlidingComplete}
               />  
-              <Text>{this.getTimeDuration()}</Text>
+              <View style={{backgroundColor: 'rgba(255, 255, 255, 0.5)'}}><Text>{this.getTimeDuration()}</Text></View>
             </Animated.View>
         </Animated.View>
       </View>

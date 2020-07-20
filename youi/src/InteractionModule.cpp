@@ -27,7 +27,6 @@ bool InteractionModule::HandleEvent(const std::shared_ptr<CYIEventDispatcher> &p
 {
     YI_UNUSED(pDispatcher);
     YI_UNUSED(pEvent);
-    YI_LOGD("InteractionModule", "Jose EmitEvent c++ ");
     EmitEvent(USER_INTERACTION, {}); //emits to JS
 
     return false;
