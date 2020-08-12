@@ -37,15 +37,12 @@ export default class PDPScreen extends React.PureComponent <Props, State> {
   focusListener?: NavigationEventSubscription;
   blurListener?: NavigationEventSubscription;
   eventEmitter: any;
+  isPlayerControlShowing: boolean = false
+  playerControlTimer!: NodeJS.Timeout;
 
   constructor(props: Props) {
     super(props)
- //   this.item = this.props.navigation.getParam('item');
-    this.item = { id: '0d8DbGTAu9HZK4OAWldb',
-    title: 'Land of Soap and Glory',
-    description: 'A longer description',
-    image: 'https://firebasestorage.googleapis.com/v0/b/sample-movie-api.appspot.com/o/posters%2FpBsO9AZ.jpg?alt=media&token=2594d2c8-8844-4fff-a0c0-f74cc812573e',
-    video: 'https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8' }
+    this.item = this.props.navigation.getParam('item');
     this.state={
       isPlaying: false,
       isPlayerBackButtonFocused: false,
@@ -79,10 +76,7 @@ export default class PDPScreen extends React.PureComponent <Props, State> {
   onKeyPressed = () => {
     if(this.state.showPlayer) {
       if(this.isPlayerControlShowing) {
-        //reset timer
-        console.log('jose st restart timer');
-        
-        this.playerControlTimer.clearTimeout
+        clearTimeout(this.playerControlTimer)
         this.playerControlTimer = setTimeout(this.hidePlayerControl, PLAYER_CONTROL_DURATION)
       }
       else {
@@ -310,7 +304,6 @@ export default class PDPScreen extends React.PureComponent <Props, State> {
                 maximumValue={this.state.duration}
                 minimumValue={0}
                 value={this.state.currentTime}
-                onValueChange={this.onScrub}
                 onSlidingComplete={this.onSlidingComplete}
               />  
               <View style={{backgroundColor: 'rgba(255, 255, 255, 0.5)'}}><Text>{this.getTimeDuration()}</Text></View>
